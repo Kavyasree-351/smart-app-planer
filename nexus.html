@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NEXUS — Smart Daily Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root {
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+
+[data-theme="dark"] {
+  --bg: #0c0c0d;
+  --bg2: #141416;
+  --bg3: #1c1c1f;
+  --bg4: #242428;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f0f0f0;
+  --text2: #888;
+  --text3: #555;
+  --accent: #00d4aa;
+  --accent2: #00b894;
+  --accentbg: rgba(0,212,170,0.1);
+  --accentborder: rgba(0,212,170,0.25);
+  --warn: #f59e0b;
+  --warnbg: rgba(245,158,11,0.1);
+  --danger: #ef4444;
+  --dangerbg: rgba(239,68,68,0.1);
+  --blue: #3b82f6;
+  --bluebg: rgba(59,130,246,0.1);
+  --sidebar-w: 220px;
+}
+
+[data-theme="light"] {
+  --bg: #f8f8f6;
+  --bg2: #ffffff;
+  --bg3: #f0f0ee;
+  --bg4: #e8e8e4;
+  --border: rgba(0,0,0,0.07);
+  --border2: rgba(0,0,0,0.12);
+  --text: #111;
+  --text2: #666;
+  --text3: #aaa;
+  --accent: #059669;
+  --accent2: #047857;
+  --accentbg: rgba(5,150,105,0.08);
+  --accentborder: rgba(5,150,105,0.2);
+  --warn: #d97706;
+  --warnbg: rgba(217,119,6,0.08);
+  --danger: #dc2626;
+  --dangerbg: rgba(220,38,38,0.08);
+  --blue: #2563eb;
+  --bluebg: rgba(37,99,235,0.08);
+  --sidebar-w: 220px;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; overflow: hidden; transition: background 0.3s, color 0.3s; }
+
+/* ── LAYOUT ── */
+.app { display: flex; height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.sidebar-logo {
+  padding: 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo-mark {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.logo-mark svg { width: 14px; height: 14px; fill: #fff; }
+.logo-name { font-size: 15px; font-weight: 500; letter-spacing: 0.08em; color: var(--text); }
+.logo-tag { font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: 0.04em; }
+
+.nav { padding: 12px 10px; flex: 1; overflow-y: auto; }
+.nav-section { font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 8px 4px; margin-top: 8px; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px; font-weight: 400;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 1px;
+  border: 1px solid transparent;
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active {
+  background: var(--accentbg);
+  color: var(--accent);
+  border-color: var(--accentborder);
+  font-weight: 500;
+}
+.nav-icon { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.7; }
+.nav-item.active .nav-icon { opacity: 1; }
+
+.sidebar-bottom { padding: 12px 10px; border-top: 1px solid var(--border); }
+.user-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.user-card:hover { background: var(--bg3); }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accentbg); border: 1px solid var(--accentborder); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: var(--accent); flex-shrink: 0; }
+.user-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.user-plan { font-size: 11px; color: var(--text3); }
+
+/* ── MAIN ── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+
+.topbar {
+  padding: 0 24px;
+  height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+.topbar-left { display: flex; align-items: center; gap: 16px; }
+.page-title { font-size: 14px; font-weight: 500; color: var(--text); }
+.live-dot { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text3); }
+.live-dot::before { content: ''; display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px; font-weight: 500; font-family: var(--font);
+  cursor: pointer; border: 1px solid var(--border2);
+  background: transparent; color: var(--text2);
+  transition: all 0.15s;
+}
+.btn:hover { background: var(--bg3); color: var(--text); }
+.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.primary:hover { background: var(--accent2); }
+.btn svg { width: 13px; height: 13px; }
+
+.theme-btn {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text2);
+  transition: all 0.15s;
+}
+.theme-btn:hover { background: var(--bg3); color: var(--text); }
+.theme-btn svg { width: 15px; height: 15px; }
+
+/* ── CONTENT AREA ── */
+.body-split { flex: 1; display: flex; overflow: hidden; }
+
+.content-area { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+.content-area::-webkit-scrollbar { width: 4px; }
+.content-area::-webkit-scrollbar-track { background: transparent; }
+.content-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  transition: background 0.3s, border 0.3s;
+}
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.card-title { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; }
+.card-action { font-size: 12px; color: var(--accent); cursor: pointer; transition: opacity 0.15s; }
+.card-action:hover { opacity: 0.7; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+/* ── STAT CARDS ── */
+.stat-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.stat-value { font-size: 24px; font-weight: 500; color: var(--text); line-height: 1; margin-bottom: 4px; }
+.stat-sub { font-size: 11px; color: var(--text2); }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 500; font-family: var(--mono); }
+.badge.green { background: var(--accentbg); color: var(--accent); border: 1px solid var(--accentborder); }
+.badge.warn { background: var(--warnbg); color: var(--warn); }
+.badge.danger { background: var(--dangerbg); color: var(--danger); }
+.badge.blue { background: var(--bluebg); color: var(--blue); }
+
+/* ── EVENTS ── */
+.event-list { display: flex; flex-direction: column; gap: 0; }
+.event-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.event-row:last-child { border-bottom: none; padding-bottom: 0; }
+.event-time { font-size: 11px; color: var(--text3); font-family: var(--mono); min-width: 40px; padding-top: 2px; }
+.event-pip { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.event-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.event-meta { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+/* ── AI CHAT PANEL ── */
+.chat-panel {
+  width: 340px;
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+.chat-top { padding: 16px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.chat-top-title { font-size: 13px; font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.ai-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+.model-badge { font-size: 10px; font-family: var(--mono); color: var(--text3); background: var(--bg3); padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border); }
+
+.chat-messages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.chat-messages::-webkit-scrollbar { width: 3px; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+.msg { display: flex; flex-direction: column; gap: 4px; }
+.msg.user { align-items: flex-end; }
+.msg.ai { align-items: flex-start; }
+
+.msg-bubble {
+  max-width: 85%;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 13px; line-height: 1.5;
+  word-break: break-word;
+}
+.msg.user .msg-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.msg.ai .msg-bubble { background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.msg-time { font-size: 10px; color: var(--text3); font-family: var(--mono); padding: 0 4px; }
+
+.msg-bubble a { color: var(--accent); text-decoration: underline; }
+.msg-bubble code { font-family: var(--mono); font-size: 11px; background: rgba(0,0,0,0.2); padding: 1px 4px; border-radius: 3px; }
+.msg-bubble strong { font-weight: 500; }
+
+/* Map inside chat */
+.chat-map { border-radius: 8px; overflow: hidden; margin-top: 8px; border: 1px solid var(--border2); }
+
+/* source chips */
+.msg-sources { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 4px; }
+.src-chip { font-size: 10px; font-family: var(--mono); padding: 2px 7px; border-radius: 10px; background: var(--accentbg); color: var(--accent); border: 1px solid var(--accentborder); }
+
+/* typing indicator */
+.typing { display: flex; gap: 4px; align-items: center; padding: 10px 12px; }
+.typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); animation: bounce 1.2s infinite; }
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+
+.chat-footer { padding: 12px 14px; border-top: 1px solid var(--border); }
+.chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
+.chat-textarea {
+  flex: 1;
+  resize: none; overflow: hidden;
+  padding: 9px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  font-size: 13px; font-family: var(--font);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+  min-height: 38px; max-height: 120px;
+}
+.chat-textarea::placeholder { color: var(--text3); }
+.chat-textarea:focus { border-color: var(--accent); }
+
+.send-btn {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: var(--accent);
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.1s;
+}
+.send-btn:hover { background: var(--accent2); }
+.send-btn:active { transform: scale(0.95); }
+.send-btn svg { width: 15px; height: 15px; fill: none; stroke: #fff; stroke-width: 2.5; }
+
+.chat-hint { font-size: 11px; color: var(--text3); text-align: center; margin-top: 8px; }
+
+/* ── SETTINGS MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 28px;
+  width: 420px;
+  transform: translateY(8px);
+  transition: transform 0.2s;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-title { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+.modal-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; line-height: 1.6; }
+.modal-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.modal-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  font-size: 13px; font-family: var(--mono);
+  color: var(--text);
+  outline: none;
+  margin-bottom: 16px;
+  transition: border-color 0.15s;
+}
+.modal-input:focus { border-color: var(--accent); }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ── MAP WIDGET ── */
+#map-container { height: 180px; border-radius: 8px; overflow: hidden; }
+.leaflet-container { background: var(--bg3) !important; }
+
+/* ── PROGRESS ── */
+.progress-bar { height: 4px; background: var(--bg4); border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.5s ease; }
+
+/* ── MINI CHART ── */
+.mini-bars { display: flex; align-items: flex-end; gap: 4px; height: 48px; }
+.mini-bar { flex: 1; background: var(--bg4); border-radius: 3px 3px 0 0; transition: background 0.2s; min-height: 4px; }
+.mini-bar.today { background: var(--accent); }
+.bar-labels { display: flex; justify-content: space-between; margin-top: 6px; }
+.bar-label { font-size: 10px; color: var(--text3); font-family: var(--mono); flex: 1; text-align: center; }
+
+/* ── SUGGESTION CHIPS ── */
+.suggestions { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 10px; }
+.sug-chip {
+  font-size: 11px; padding: 5px 10px;
+  border-radius: 20px; cursor: pointer;
+  background: var(--bg3); color: var(--text2);
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+.sug-chip:hover { background: var(--accentbg); color: var(--accent); border-color: var(--accentborder); }
+
+/* ── PAGE VIEWS ── */
+.page { display: none; }
+.page.active { display: flex; flex-direction: column; gap: 16px; }
+
+/* Scrollbar for all */
+* { scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+
+/* ── SERVER STATUS BANNER ── */
+.server-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: var(--mono);
+}
+.server-banner.ok { background: var(--accentbg); color: var(--accent); border: 1px solid var(--accentborder); }
+.server-banner.err { background: var(--dangerbg); color: var(--danger); border: 1px solid rgba(239,68,68,0.25); }
+.server-banner.checking { background: var(--warnbg); color: var(--warn); border: 1px solid rgba(245,158,11,0.25); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 14 14"><path d="M7 1L2 4v6l5 3 5-3V4L7 1z"/></svg>
+      </div>
+      <div>
+        <div class="logo-name">NEXUS</div>
+        <div class="logo-tag">smart planner</div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <div class="nav-section">Workspace</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)">
+        <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="6" height="6" rx="1.5"/><rect x="10" y="2" width="6" height="6" rx="1.5"/><rect x="2" y="10" width="6" height="6" rx="1.5"/><rect x="10" y="10" width="6" height="6" rx="1.5"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('schedule',this)">
+        <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="14" height="13" rx="2"/><line x1="6" y1="1" x2="6" y2="5"/><line x1="12" y1="1" x2="12" y2="5"/><line x1="2" y1="8" x2="16" y2="8"/></svg>
+        Schedule
+      </div>
+      <div class="nav-item" onclick="showPage('insights',this)">
+        <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,14 6,9 10,11 16,4"/><polyline points="12,4 16,4 16,8"/></svg>
+        Insights
+      </div>
+      <div class="nav-section">Tools</div>
+      <div class="nav-item" onclick="showPage('map',this)">
+        <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2C6.2 2 4 4.2 4 7c0 4 5 9 5 9s5-5 5-9c0-2.8-2.2-5-5-5z"/><circle cx="9" cy="7" r="1.5"/></svg>
+        Map
+      </div>
+      <div class="nav-item" onclick="openSettings()">
+        <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="2.5"/><path d="M9 2v1M9 15v1M2 9h1M15 9h1M4.2 4.2l.7.7M13.1 13.1l.7.7M4.2 13.8l.7-.7M13.1 4.9l.7-.7"/></svg>
+        Settings
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="user-card">
+        <div class="avatar" id="user-avatar">K</div>
+        <div>
+          <div class="user-name" id="user-name-display">Kavya</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="page-title" id="page-title">Dashboard</div>
+        <div class="live-dot" id="live-indicator">Live data</div>
+      </div>
+      <div class="topbar-actions">
+        <span style="font-size:12px;color:var(--text3);font-family:var(--mono)" id="current-date"></span>
+        <!-- Server status indicator -->
+        <div class="server-banner checking" id="server-status">⬤ checking server...</div>
+        <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+          <svg id="theme-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><line x1="8" y1="1" x2="8" y2="2.5"/><line x1="8" y1="13.5" x2="8" y2="15"/><line x1="1" y1="8" x2="2.5" y2="8"/><line x1="13.5" y1="8" x2="15" y2="8"/><line x1="3.1" y1="3.1" x2="4.1" y2="4.1"/><line x1="11.9" y1="11.9" x2="12.9" y2="12.9"/><line x1="3.1" y1="12.9" x2="4.1" y2="11.9"/><line x1="11.9" y1="4.1" x2="12.9" y2="3.1"/></svg>
+        </button>
+        <button class="btn" onclick="openSettings()">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1.5c-.3 0-1 .5-1.3.5L4 2.5l-.5 1.8-1.3.7v1.5l1.3.7L4 9l1.7.5c.3 0 1 .5 1.3.5s1-.5 1.3-.5L10 9l.5-1.8 1.3-.7V5l-1.3-.7L10 2.5l-1.7-.5c-.3 0-1-.5-1.3-.5z"/><circle cx="7" cy="7" r="1.5"/></svg>
+          Settings
+        </button>
+        <button class="btn primary" onclick="addEvent()">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>
+          New event
+        </button>
+      </div>
+    </div>
+
+    <!-- BODY SPLIT -->
+    <div class="body-split">
+
+      <!-- CONTENT AREA -->
+      <div class="content-area">
+
+        <!-- DASHBOARD PAGE -->
+        <div class="page active" id="page-dashboard">
+          <!-- Greeting -->
+          <div style="padding: 4px 0 8px;">
+            <div style="font-size:20px;font-weight:500;color:var(--text)" id="greeting">Good morning, Kavya</div>
+            <div style="font-size:13px;color:var(--text2);margin-top:3px" id="greeting-sub">Here's your daily overview</div>
+          </div>
+
+          <!-- Stats -->
+          <div class="grid-3">
+            <div class="stat-card">
+              <div class="stat-label">Today's tasks</div>
+              <div class="stat-value" id="task-count">—</div>
+              <div style="margin-top:6px"><span class="badge green" id="task-badge">loading</span></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Weather</div>
+              <div class="stat-value" id="weather-val">—</div>
+              <div class="stat-sub" id="weather-sub">Fetching...</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Focus score</div>
+              <div class="stat-value" id="focus-score">84</div>
+              <div style="margin-top:6px;"><div class="progress-bar"><div class="progress-fill" id="focus-bar" style="width:84%"></div></div></div>
+            </div>
+          </div>
+
+          <!-- Two cols -->
+          <div class="grid-2">
+            <!-- Schedule -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Today's schedule</span>
+                <span class="card-action" onclick="showPage('schedule',null)">View all →</span>
+              </div>
+              <div class="event-list" id="event-list">
+                <div style="font-size:12px;color:var(--text3);padding:10px 0;">No events yet — add one!</div>
+              </div>
+            </div>
+
+            <!-- Weekly activity -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Weekly activity</span>
+                <span class="badge blue">this week</span>
+              </div>
+              <div class="mini-bars" id="week-bars"></div>
+              <div class="bar-labels" id="week-labels"></div>
+              <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
+                <div class="card-title" style="margin-bottom:10px;">Quick stats</div>
+                <div style="display:flex;gap:20px;">
+                  <div><div style="font-size:18px;font-weight:500;color:var(--text)" id="week-total">0</div><div style="font-size:11px;color:var(--text3)">events this week</div></div>
+                  <div><div style="font-size:18px;font-weight:500;color:var(--accent)" id="streak">0</div><div style="font-size:11px;color:var(--text3)">day streak</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI summary card -->
+          <div class="card" id="ai-summary-card">
+            <div class="card-header">
+              <span class="card-title">AI daily brief &amp; news</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="badge green">Grok + live web</span>
+                <button onclick="generateDailyBrief()" class="btn" style="padding:3px 10px;font-size:11px;height:auto;">&#8635; Refresh</button>
+              </div>
+            </div>
+            <div id="ai-summary-content" style="font-size:13px;color:var(--text2);line-height:1.8;">
+              <span style="color:var(--text3);">Make sure your backend server is running on port 3000 to get live news headlines, weather context, and your personalised morning brief.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SCHEDULE PAGE -->
+        <div class="page" id="page-schedule">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:18px;font-weight:500">Schedule</div>
+            <button class="btn primary" onclick="addEvent()">+ New event</button>
+          </div>
+          <div class="card">
+            <div id="full-event-list" style="display:flex;flex-direction:column;gap:0;"></div>
+          </div>
+        </div>
+
+        <!-- INSIGHTS PAGE -->
+        <div class="page" id="page-insights">
+          <div style="font-size:18px;font-weight:500">Insights</div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header"><span class="card-title">Productivity trend</span></div>
+              <div class="mini-bars" id="insights-bars" style="height:80px"></div>
+              <div class="bar-labels" id="insights-labels"></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><span class="card-title">Category split</span></div>
+              <div id="category-split" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">AI productivity analysis</span>
+              <button onclick="generateProductivityAnalysis()" class="btn" style="padding:3px 10px;font-size:11px;height:auto;">&#8635; Analyse</button>
+            </div>
+            <div id="insights-ai" style="font-size:13px;color:var(--text2);line-height:1.8;">
+              <span style="color:var(--text3);">Click Analyse to get AI-powered insights on your schedule patterns and productivity.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAP PAGE -->
+        <div class="page" id="page-map">
+          <div style="font-size:18px;font-weight:500">Map</div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Interactive map</span>
+              <span class="card-action" onclick="locateMe()">📍 My location</span>
+            </div>
+            <div id="main-map" style="height:380px;border-radius:8px;overflow:hidden;border:1px solid var(--border)"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- AI CHAT PANEL -->
+      <div class="chat-panel">
+        <div class="chat-top">
+          <div class="chat-top-title">
+            <div class="ai-dot"></div>
+            AI Assistant
+          </div>
+          <span class="model-badge" id="model-label">grok-3</span>
+        </div>
+
+        <div class="suggestions" id="suggestions">
+          <div class="sug-chip" onclick="sendSuggestion('Plan my day')">Plan my day</div>
+          <div class="sug-chip" onclick="sendSuggestion('Show me a map of Dubai')">Dubai map</div>
+          <div class="sug-chip" onclick="sendSuggestion('What should I focus on today?')">Focus tips</div>
+          <div class="sug-chip" onclick="sendSuggestion('Summarise my schedule')">My schedule</div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+          <div class="msg ai">
+            <div class="msg-bubble">Hey! I'm your NEXUS AI, powered by Grok via your local backend server.<br><br>Make sure your Node.js server is running on <code>http://localhost:3000</code> to enable AI features!</div>
+            <div class="msg-time">now</div>
+          </div>
+        </div>
+
+        <div class="chat-footer">
+          <div class="chat-input-row">
+            <textarea class="chat-textarea" id="chat-input" placeholder="Ask anything..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+            <button class="send-btn" onclick="sendMessage()">
+              <svg viewBox="0 0 16 16"><line x1="2" y1="14" x2="14" y2="2"/><polyline points="6,2 14,2 14,10"/></svg>
+            </button>
+          </div>
+          <div class="chat-hint" id="chat-hint">Connecting to backend...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="modal-title">Settings</div>
+      <button onclick="closeSettings()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:18px;">×</button>
+    </div>
+    <div class="modal-sub">
+      Your Grok API key is now managed securely by your Node.js backend server — you no longer need to enter it here.
+      Just make sure your <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:2px 6px;border-radius:4px;">server.js</code> is running with the key set in your <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:2px 6px;border-radius:4px;">.env</code> file.
+    </div>
+
+    <div class="modal-label">Your name</div>
+    <input class="modal-input" id="user-name-input" placeholder="e.g. Kavya" style="font-family:var(--font)"/>
+
+    <div class="modal-label">City (for weather context)</div>
+    <input class="modal-input" id="city-input" placeholder="e.g. Dubai" style="font-family:var(--font)"/>
+
+    <div class="modal-label">Backend URL</div>
+    <input class="modal-input" id="backend-url-input" placeholder="http://localhost:3000" style="font-family:var(--mono)"/>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeSettings()">Cancel</button>
+      <button class="btn primary" onclick="saveSettings()">Save settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD EVENT MODAL -->
+<div class="modal-overlay" id="event-modal">
+  <div class="modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="modal-title">New Event</div>
+      <button onclick="closeEventModal()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:18px;">×</button>
+    </div>
+    <div class="modal-label">Event title</div>
+    <input class="modal-input" id="evt-title" placeholder="e.g. Team meeting" style="font-family:var(--font)"/>
+    <div class="modal-label">Date & Time</div>
+    <input class="modal-input" id="evt-datetime" type="datetime-local" style="font-family:var(--font)"/>
+    <div class="modal-label">Category</div>
+    <select class="modal-input" id="evt-category" style="font-family:var(--font)">
+      <option value="work">Work</option>
+      <option value="personal">Personal</option>
+      <option value="health">Health</option>
+      <option value="social">Social</option>
+      <option value="study">Study</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeEventModal()">Cancel</button>
+      <button class="btn primary" onclick="saveEvent()">Add event</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────
+let state = {
+  // NOTE: API key is NO LONGER stored in the browser.
+  // It lives in your backend .env file as GROK_API_KEY.
+  backendUrl: localStorage.getItem('nx_backend_url') || 'http://localhost:3000',
+  userName: localStorage.getItem('nx_user') || 'Kavya',
+  city: localStorage.getItem('nx_city') || 'Dubai',
+  events: [], // loaded from MongoDB on init
+  messages: [],
+  map: null,
+  mainMap: null,
+  serverOnline: false
+};
+
+const CAT_COLORS = { work:'#3b82f6', personal:'#10b981', health:'#f59e0b', social:'#ec4899', study:'#8b5cf6' };
+
+// ─── BACKEND URL HELPER ───────────────────────────────────────
+function backendUrl(path) {
+  return state.backendUrl.replace(/\/$/, '') + path;
+}
+
+// ─── CORE: askGrok — talks to YOUR Node backend ──────────────
+/**
+ * Sends a message to the local Node.js backend which securely
+ * holds the Grok API key and proxies the request to xAI.
+ *
+ * @param {string} prompt - The user's message / prompt
+ * @returns {string} - The AI's reply text
+ */
+async function askGrok(prompt) {
+  try {
+    // We send the prompt to YOUR server (running on port 3000)
+    const response = await fetch(backendUrl('/api/chat'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: prompt })
+    });
+
+    if (!response.ok) throw new Error('Backend server is down');
+
+    const data = await response.json();
+    // Return the response from your backend
+    return data.choices[0].message.content;
+  } catch (err) {
+    console.error("Grok Error:", err);
+    return "I'm having trouble connecting to my brain (the backend). Is the server running?";
+  }
+}
+
+// ─── callGrok: full messages array version (for multi-turn chat)
+// Uses the backend /api/chat-messages endpoint which accepts
+// a full messages array for maintaining conversation context.
+async function callGrok(messages, max_tokens = 500, useWebSearch = false) {
+  try {
+    const response = await fetch(backendUrl('/api/chat-messages'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, max_tokens, useWebSearch })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `Server error ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || '';
+  } catch (err) {
+    console.error('callGrok error:', err);
+    throw err;
+  }
+}
+
+// ─── SERVER HEALTH CHECK ──────────────────────────────────────
+async function checkServerHealth() {
+  const banner = document.getElementById('server-status');
+  const hint = document.getElementById('chat-hint');
+  banner.className = 'server-banner checking';
+  banner.textContent = '⬤ checking server...';
+
+  try {
+    const res = await fetch(backendUrl('/health'), { method: 'GET' });
+    if (res.ok) {
+      state.serverOnline = true;
+      banner.className = 'server-banner ok';
+      banner.textContent = '⬤ server online';
+      hint.textContent = 'Backend connected ✓';
+      await loadEventsFromServer(); // Pull real events from MongoDB
+      generateDailyBrief();
+    } else {
+      throw new Error('not ok');
+    }
+  } catch {
+    state.serverOnline = false;
+    banner.className = 'server-banner err';
+    banner.textContent = '⬤ server offline';
+    hint.textContent = 'Start your Node server on port 3000';
+  }
+}
+
+// ─── INIT ───────────────────────────────────────────────────
+function init() {
+  setDate();
+  setGreeting();
+  renderEvents();
+  renderWeekBars();
+  renderInsights();
+  applyUserName();
+  checkServerHealth();
+}
+
+function setDate() {
+  const d = new Date();
+  document.getElementById('current-date').textContent =
+    d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+}
+
+function setGreeting() {
+  const h = new Date().getHours();
+  const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greeting').textContent = `${g}, ${state.userName}`;
+  document.getElementById('greeting-sub').textContent = `Here's your ${
+    new Date().toLocaleDateString('en-US',{weekday:'long'})} overview`;
+}
+
+function applyUserName() {
+  document.getElementById('user-name-display').textContent = state.userName;
+  document.getElementById('user-avatar').textContent = state.userName[0].toUpperCase();
+  setGreeting();
+}
+
+// ─── THEME ──────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  const icon = document.getElementById('theme-icon');
+  if (isDark) {
+    icon.innerHTML = '<path d="M8 3a5 5 0 1 0 0 10A5 5 0 0 0 8 3z" fill="currentColor" stroke="none"/><path d="M12 2a6 6 0 0 1-6 10A6 6 0 0 0 12 2z" fill="var(--bg)" stroke="none"/>';
+  } else {
+    icon.innerHTML = '<circle cx="8" cy="8" r="3"/><line x1="8" y1="1" x2="8" y2="2.5"/><line x1="8" y1="13.5" x2="8" y2="15"/><line x1="1" y1="8" x2="2.5" y2="8"/><line x1="13.5" y1="8" x2="15" y2="8"/><line x1="3.1" y1="3.1" x2="4.1" y2="4.1"/><line x1="11.9" y1="11.9" x2="12.9" y2="12.9"/><line x1="3.1" y1="12.9" x2="4.1" y2="11.9"/><line x1="11.9" y1="4.1" x2="12.9" y2="3.1"/>';
+  }
+  setTimeout(() => { if(state.mainMap) state.mainMap.invalidateSize(); }, 200);
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const titles = { dashboard:'Dashboard', schedule:'Schedule', insights:'Insights', map:'Map' };
+  document.getElementById('page-title').textContent = titles[name] || name;
+
+  if (name === 'map') {
+    setTimeout(initMainMap, 150);
+  }
+  if (name === 'insights') { renderInsights(); if (state.serverOnline) generateProductivityAnalysis(); }
+}
+
+// ─── EVENTS ──────────────────────────────────────────────────
+function addEvent() {
+  const now = new Date();
+  now.setMinutes(0,0,0);
+  document.getElementById('evt-datetime').value = now.toISOString().slice(0,16);
+  document.getElementById('event-modal').classList.add('open');
+}
+function closeEventModal() { document.getElementById('event-modal').classList.remove('open'); }
+
+async function saveEvent() {
+  const title = document.getElementById('evt-title').value.trim();
+  const dt = document.getElementById('evt-datetime').value;
+  const cat = document.getElementById('evt-category').value;
+  if (!title || !dt) return;
+
+  if (state.serverOnline) {
+    // Save to MongoDB via backend
+    try {
+      const res = await fetch(backendUrl('/api/events'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, dt, cat })
+      });
+      if (res.ok) {
+        document.getElementById('evt-title').value = '';
+        closeEventModal();
+        await loadEventsFromServer(); // Refresh from DB
+        return;
+      }
+    } catch(e) { console.warn('Backend save failed, falling back to local', e); }
+  }
+
+  // Fallback: save to localStorage if server is offline
+  state.events.push({ id: Date.now(), title, dt, cat });
+  state.events.sort((a,b) => new Date(a.dt) - new Date(b.dt));
+  localStorage.setItem('nx_events', JSON.stringify(state.events));
+  document.getElementById('evt-title').value = '';
+  closeEventModal();
+  renderEvents();
+  renderWeekBars();
+}
+
+async function deleteEvent(id) {
+  if (state.serverOnline) {
+    try {
+      await fetch(backendUrl('/api/events/' + id), { method: 'DELETE' });
+      await loadEventsFromServer();
+      return;
+    } catch(e) { console.warn('Backend delete failed, falling back to local', e); }
+  }
+  state.events = state.events.filter(e => e.id !== id);
+  localStorage.setItem('nx_events', JSON.stringify(state.events));
+  renderEvents(); renderWeekBars();
+}
+
+// Load all events from MongoDB and refresh the UI
+async function loadEventsFromServer() {
+  try {
+    const res = await fetch(backendUrl('/api/events'));
+    if (res.ok) {
+      state.events = await res.json();
+      renderEvents();
+      renderWeekBars();
+      renderInsights();
+    }
+  } catch(e) {
+    console.warn('Could not load events from server:', e);
+  }
+}
+
+function renderEvents() {
+  const today = new Date().toDateString();
+  const todayEvts = state.events.filter(e => new Date(e.dt).toDateString() === today);
+
+  // Dashboard mini list
+  const el = document.getElementById('event-list');
+  if (todayEvts.length === 0) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:10px 0;">No events today — add one!</div>';
+  } else {
+    el.innerHTML = todayEvts.slice(0,4).map(e => {
+      const t = new Date(e.dt);
+      const hm = t.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
+      return `<div class="event-row">
+        <span class="event-time">${hm}</span>
+        <div class="event-pip" style="background:${CAT_COLORS[e.cat]||'var(--accent)'}"></div>
+        <div>
+          <div class="event-name">${e.title}</div>
+          <div class="event-meta">${e.cat}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Stat
+  document.getElementById('task-count').textContent = todayEvts.length;
+  document.getElementById('task-badge').textContent = `${todayEvts.length} today`;
+
+  // Full list
+  const fl = document.getElementById('full-event-list');
+  if (state.events.length === 0) {
+    fl.innerHTML = '<div style="font-size:13px;color:var(--text3);padding:16px 0;text-align:center;">No events yet — add one above!</div>';
+  } else {
+    fl.innerHTML = state.events.map(e => {
+      const dt = new Date(e.dt);
+      const isToday = dt.toDateString() === new Date().toDateString();
+      return `<div class="event-row">
+        <span class="event-time" style="min-width:80px">${dt.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
+        <div class="event-pip" style="background:${CAT_COLORS[e.cat]||'var(--accent)'}"></div>
+        <div style="flex:1">
+          <div class="event-name">${e.title} ${isToday?'<span class="badge green" style="font-size:9px;padding:1px 6px">today</span>':''}</div>
+          <div class="event-meta">${dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})} · ${e.cat}</div>
+        </div>
+        <button onclick="deleteEvent(${e.id})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:0 4px;" title="Delete">×</button>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ─── CHARTS ──────────────────────────────────────────────────
+function renderWeekBars() {
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const today = new Date();
+  const dayOfWeek = (today.getDay() + 6) % 7;
+
+  const counts = days.map((_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - dayOfWeek + i);
+    const ds = d.toDateString();
+    return state.events.filter(e => new Date(e.dt).toDateString() === ds).length;
+  });
+
+  const max = Math.max(...counts, 1);
+  const barsEl = document.getElementById('week-bars');
+  const labsEl = document.getElementById('week-labels');
+
+  barsEl.innerHTML = counts.map((c, i) => {
+    const pct = Math.max((c / max) * 100, 4);
+    return `<div class="mini-bar ${i === dayOfWeek ? 'today' : ''}" style="height:${pct}%" title="${days[i]}: ${c} events"></div>`;
+  }).join('');
+
+  labsEl.innerHTML = days.map((d,i) =>
+    `<div class="bar-label" style="${i===dayOfWeek?'color:var(--accent);font-weight:500':''}">${d}</div>`
+  ).join('');
+
+  document.getElementById('week-total').textContent = counts.reduce((a,b)=>a+b,0);
+  document.getElementById('streak').textContent = Math.floor(Math.random() * 7) + 1;
+}
+
+function renderInsights() {
+  // Bars
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const vals = days.map(() => Math.floor(Math.random()*8)+1);
+  const max = Math.max(...vals);
+  document.getElementById('insights-bars').innerHTML = vals.map((v,i) =>
+    `<div class="mini-bar ${i===new Date().getDay()-1?'today':''}" style="height:${(v/max)*100}%;flex:1;"></div>`
+  ).join('');
+  document.getElementById('insights-labels').innerHTML = days.map(d =>
+    `<div class="bar-label">${d}</div>`
+  ).join('');
+
+  // Category split
+  const cats = ['work','personal','health','study','social'];
+  const catCounts = cats.map(c => ({ cat:c, count: state.events.filter(e=>e.cat===c).length }));
+  const total = catCounts.reduce((a,b)=>a+b.count,0)||1;
+  document.getElementById('category-split').innerHTML = catCounts.filter(c=>c.count>0).map(c =>
+    `<div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+        <span style="color:var(--text2)">${c.cat}</span>
+        <span style="color:var(--text3);font-family:var(--mono)">${c.count}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${(c.count/total)*100}%;background:${CAT_COLORS[c.cat]}"></div></div>
+    </div>`
+  ).join('') || '<div style="font-size:12px;color:var(--text3)">No events to analyse yet</div>';
+}
+
+// ─── MAPS ────────────────────────────────────────────────────
+function getTileUrl() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return isDark
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+}
+
+function initMainMap(lat=25.2048, lng=55.2708, zoom=12) {
+  const el = document.getElementById('main-map');
+  if (!el) return;
+  if (state.mainMap) { try { state.mainMap.remove(); } catch(e){} state.mainMap = null; }
+  el.innerHTML = '';
+  try {
+    state.mainMap = L.map('main-map', { zoomControl: true }).setView([lat, lng], zoom);
+    L.tileLayer(getTileUrl(), { attribution: '© CartoDB', maxZoom: 19 }).addTo(state.mainMap);
+    L.marker([lat, lng]).addTo(state.mainMap).bindPopup(state.city || 'Location').openPopup();
+    setTimeout(() => state.mainMap && state.mainMap.invalidateSize(), 200);
+  } catch(e) { el.innerHTML = '<div style="padding:20px;color:var(--text3);font-size:13px">Map failed to load. Try refreshing.</div>'; }
+}
+
+function locateMe() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude: lat, longitude: lng } = pos.coords;
+    if (!state.mainMap) { initMainMap(lat, lng, 14); return; }
+    state.mainMap.setView([lat, lng], 14);
+    L.marker([lat, lng]).addTo(state.mainMap).bindPopup('You are here').openPopup();
+  }, () => alert('Could not get location.'));
+}
+
+const chatMaps = {};
+function renderChatMap(containerId, lat, lng, label, zoom=13) {
+  const attempt = (tries) => {
+    const el = document.getElementById(containerId);
+    if (!el) { if (tries > 0) setTimeout(() => attempt(tries-1), 300); return; }
+    if (chatMaps[containerId]) return;
+    try {
+      el.style.height = '160px';
+      const m = L.map(containerId, { zoomControl: false, scrollWheelZoom: false, attributionControl: false })
+                 .setView([lat, lng], zoom);
+      L.tileLayer(getTileUrl(), { maxZoom: 19 }).addTo(m);
+      L.marker([lat, lng]).addTo(m).bindPopup(label).openPopup();
+      chatMaps[containerId] = m;
+      setTimeout(() => m.invalidateSize(), 150);
+    } catch(e) {
+      el.innerHTML = `<div style="padding:12px;font-size:12px;color:var(--text3)">📍 ${label}</div>`;
+    }
+  };
+  setTimeout(() => attempt(5), 200);
+}
+
+// ─── AI CHAT ─────────────────────────────────────────────────
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function sendSuggestion(text) {
+  document.getElementById('chat-input').value = text;
+  sendMessage();
+}
+
+function getTime() {
+  return new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+}
+
+function appendMsg(role, html, sources=[]) {
+  const wrap = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+
+  let inner = `<div class="msg-bubble">${html}</div>`;
+  inner += `<div class="msg-time">${getTime()}</div>`;
+  if (sources.length) {
+    inner += `<div class="msg-sources">${sources.map(s=>`<span class="src-chip">${s}</span>`).join('')}</div>`;
+  }
+  div.innerHTML = inner;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+function showTyping() {
+  const wrap = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai'; div.id = 'typing-indicator';
+  div.innerHTML = `<div class="msg-bubble typing"><span></span><span></span><span></span></div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+function extractMapCoords(text) {
+  const m = text.match(/\[MAP:\s*(-?[\d.]+),\s*(-?[\d.]+),\s*([^\]]+)\]/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]), label: m[3].trim() };
+  return null;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  appendMsg('user', text.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+
+  if (!state.serverOnline) {
+    appendMsg('ai', 'The backend server is not reachable. Please start your Node.js server on <code>localhost:3000</code> and refresh.');
+    return;
+  }
+
+  showTyping();
+
+  const today = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  const eventsCtx = state.events.length
+    ? state.events.slice(0,10).map(e=>`- ${e.title} (${new Date(e.dt).toLocaleDateString()}, ${e.cat})`).join('\n')
+    : 'No events scheduled.';
+
+  const system = `You are NEXUS, a smart personal AI assistant inside a daily planner app. Today is ${today}. The user's name is ${state.userName} and their city is ${state.city}.
+
+User's upcoming events:
+${eventsCtx}
+
+Capabilities:
+- Help with scheduling, productivity, and daily planning
+- Answer questions about weather, places, things to do
+- Give actionable, concise advice
+- When suggesting a specific place or location, include a special map tag: [MAP: lat,lng,Place Name] e.g. [MAP: 25.2048,55.2708,Dubai Downtown]
+
+Keep responses concise, friendly, and professional. Use <strong> for key points. Use line breaks for readability. Never be verbose.`;
+
+  const history = state.messages.slice(-10).map(m => ({ role: m.role, content: m.content }));
+  state.messages.push({ role: 'user', content: text });
+
+  try {
+    // ── Route through backend instead of calling xAI directly ──
+    const response = await fetch(backendUrl('/api/chat'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        system,
+        history,
+        max_tokens: 600
+      })
+    });
+
+    hideTyping();
+
+    if (!response.ok) {
+      const err = await response.json().catch(()=>({error:{message:'Unknown error'}}));
+      appendMsg('ai', `Error: ${err.error?.message || 'Backend call failed. Is the server running?'}`);
+      return;
+    }
+
+    const data = await response.json();
+    let reply = data.choices?.[0]?.message?.content || 'No response.';
+    state.messages.push({ role: 'assistant', content: reply });
+
+    const coords = extractMapCoords(reply);
+    const cleanReply = reply.replace(/\[MAP:[^\]]+\]/g, '').trim();
+    const formatted = cleanReply.replace(/\n/g, '<br>');
+
+    const mapId = coords ? 'map-' + Date.now() : null;
+    let html = formatted;
+    if (coords) html += `<div class="chat-map" id="${mapId}" style="height:160px;"></div>`;
+
+    appendMsg('ai', html, coords ? ['Maps', 'Grok AI'] : ['Grok AI']);
+
+    if (coords) renderChatMap(mapId, coords.lat, coords.lng, coords.label);
+
+    document.getElementById('suggestions').style.display = 'none';
+
+  } catch(e) {
+    hideTyping();
+    appendMsg('ai', `Connection error: ${e.message}. Make sure your backend server is running on <code>${state.backendUrl}</code>.`);
+  }
+}
+
+function formatAIHtml(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^#{1,3}\s+(.+)$/gm, '<div style="font-weight:500;color:var(--text);margin:10px 0 4px;">$1</div>')
+    .replace(/^[-•]\s+(.+)$/gm, '<div style="display:flex;gap:8px;margin:3px 0;"><span style="color:var(--accent);flex-shrink:0">–</span><span>$1</span></div>')
+    .replace(/\n\n/g, '<br>')
+    .replace(/\n/g, ' ');
+}
+
+async function generateDailyBrief() {
+  if (!state.serverOnline) {
+    document.getElementById('ai-summary-content').innerHTML =
+      '<span style="color:var(--text3);">Start your Node.js backend server to enable the daily brief.</span>';
+    return;
+  }
+  const el = document.getElementById('ai-summary-content');
+  el.innerHTML = '<span style="color:var(--text3);font-size:12px;">&#9679;&#9679;&#9679; Fetching live news and generating your brief...</span>';
+
+  const todayEvts = state.events.filter(e => new Date(e.dt).toDateString() === new Date().toDateString());
+  const evCtx = todayEvts.length
+    ? todayEvts.map(e => `${e.title} at ${new Date(e.dt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})}`).join(', ')
+    : 'no events scheduled';
+  const today = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+
+  // Build prompt and use askGrok — which routes through the backend
+  const prompt = `You are a smart daily briefing assistant. Today is ${today}. The user is ${state.userName} based in ${state.city}. Their schedule today: ${evCtx}.
+
+Please generate a structured daily brief with these sections:
+1. **Good morning message** — one warm sentence personalised to their name and city
+2. **Top news today** — 3 real current news headlines with a one-line summary each (search the web for today's news)
+3. **Weather context** — brief note about typical weather in ${state.city} this time of year and what to wear
+4. **Schedule tip** — one smart tip based on their events today
+
+Keep it concise, professional, and useful. Use bullet points for news.`;
+
+  try {
+    const txt = await askGrok(prompt);
+    el.innerHTML = formatAIHtml(txt) || '<span style="color:var(--text3)">Could not generate brief. Try refreshing.</span>';
+  } catch(e) {
+    el.innerHTML = `<span style="color:var(--danger);">Error: ${e.message}</span>`;
+  }
+}
+
+async function generateProductivityAnalysis() {
+  if (!state.serverOnline) {
+    document.getElementById('insights-ai').innerHTML =
+      '<span style="color:var(--text3);">Start your Node.js backend server to enable AI analysis.</span>';
+    return;
+  }
+  const el = document.getElementById('insights-ai');
+  el.innerHTML = '<span style="color:var(--text3);font-size:12px;">&#9679;&#9679;&#9679; Analysing your schedule patterns...</span>';
+
+  const cats = ['work','personal','health','study','social'];
+  const catCounts = Object.fromEntries(cats.map(c => [c, state.events.filter(e=>e.cat===c).length]));
+  const total = state.events.length;
+  const days = [...new Set(state.events.map(e => new Date(e.dt).toDateString()))].length;
+  const upcomingEvts = state.events.slice(0,8).map(e =>
+    `${e.title} (${e.cat}, ${new Date(e.dt).toLocaleDateString()})`
+  ).join(', ') || 'none';
+
+  const prompt = `Analyse this user's productivity and schedule data and give smart insights:
+
+User: ${state.userName}, City: ${state.city}
+Total events logged: ${total}
+Active days: ${days}
+Category breakdown: ${JSON.stringify(catCounts)}
+Upcoming events: ${upcomingEvts}
+
+Give a structured analysis with:
+1. **Overall pattern** — what does their schedule say about their lifestyle/work style?
+2. **Balance check** — are they overloaded in any category? Any category neglected?
+3. **Top recommendation** — one specific, actionable suggestion to improve their week
+4. **Productivity score** — rate their schedule balance out of 10 with a brief reason
+
+Be direct, specific, and useful. Keep it under 200 words.`;
+
+  try {
+    // Use askGrok which routes through the backend securely
+    const txt = await askGrok(prompt);
+    el.innerHTML = formatAIHtml(txt) || '<span style="color:var(--text3)">No analysis available.</span>';
+  } catch(e) {
+    el.innerHTML = `<span style="color:var(--danger);">Error: ${e.message}</span>`;
+  }
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('user-name-input').value = state.userName;
+  document.getElementById('city-input').value = state.city;
+  document.getElementById('backend-url-input').value = state.backendUrl;
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
+
+function saveSettings() {
+  const name = document.getElementById('user-name-input').value.trim() || 'Kavya';
+  const city = document.getElementById('city-input').value.trim() || 'Dubai';
+  const backendUrlVal = document.getElementById('backend-url-input').value.trim() || 'http://localhost:3000';
+
+  state.userName = name;
+  state.city = city;
+  state.backendUrl = backendUrlVal;
+
+  // NOTE: No API key saved to localStorage — it lives in the backend .env
+  localStorage.setItem('nx_user', name);
+  localStorage.setItem('nx_city', city);
+  localStorage.setItem('nx_backend_url', backendUrlVal);
+
+  applyUserName();
+  closeSettings();
+
+  // Re-check server health with potentially new URL
+  checkServerHealth();
+  appendMsg('ai', `Settings saved! I'm <strong>${name}</strong> in <strong>${city}</strong>. Checking backend at <code>${backendUrlVal}</code>...`);
+}
+
+// ─── CLOSE MODALS ON OUTSIDE CLICK ──────────────────────────
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+// ─── START ───────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
